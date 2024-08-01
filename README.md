@@ -8,7 +8,7 @@
 
 To deploy new GKE cluster, need to update the `local_variables.tf` file with the appropriate values and then execute below:
 
-1. `cd k8s-app/infrastructure`
+1. `cd milvus-k8s-demo/infrastructure`
 
 2. Edit `local_variables.tf` to set your project ID, location, prefix_name, etc.
 
