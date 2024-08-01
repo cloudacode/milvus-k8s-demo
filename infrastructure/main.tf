@@ -1,5 +1,3 @@
-
-## Enable Required GCP Project Services APIs
 module "project-services" {
   source  = "terraform-google-modules/project-factory/google//modules/project_services"
   version = "~> 14.5"
