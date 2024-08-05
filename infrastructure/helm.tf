@@ -21,7 +21,11 @@ resource "helm_release" "prometheus" {
   wait          = false
   wait_for_jobs = false
 
-  depends_on = [kubernetes_namespace.monitoring, kubernetes_config_map.grafana_dashboard]
+  depends_on = [
+    kubernetes_namespace.monitoring,
+    module.workload_identity_monitoring,
+    kubernetes_config_map.grafana_dashboard,
+  ]
 }
 
 # Ingress Nginx
@@ -37,6 +41,28 @@ resource "helm_release" "ingress_nginx" {
   wait             = false
   wait_for_jobs    = false
   depends_on       = [helm_release.prometheus]
+}
+
+# External DNS
+resource "helm_release" "external_dns" {
+  provider   = helm.default
+  name       = "external-dns"
+  repository = "https://kubernetes-sigs.github.io/external-dns"
+  chart      = "external-dns"
+  version    = "1.14.5"
+  namespace  = "external-dns"
+  values = [templatefile("${path.module}/helm-values/external-dns.yaml.tpl", {
+    domain_name  = local.domain_name
+    cluster_name = local.cluster_name
+  })]
+  wait          = false
+  wait_for_jobs = false
+
+  depends_on = [
+    kubernetes_namespace.external_dns,
+    module.workload_identity_external_dns,
+    helm_release.prometheus
+  ]
 }
 
 # Loki
@@ -56,7 +82,7 @@ resource "helm_release" "loki" {
   wait_for_jobs = false
 
   depends_on = [
-    module.monitoring-workload-identity,
+    module.workload_identity_monitoring,
     kubernetes_namespace.monitoring,
     module.gcs
   ]
@@ -97,5 +123,49 @@ resource "helm_release" "milvus" {
   wait          = false
   wait_for_jobs = false
 
-  depends_on = [helm_release.ingress_nginx, helm_release.prometheus]
+  depends_on = [
+    helm_release.ingress_nginx,
+    helm_release.prometheus
+  ]
+}
+
+# Qdrant
+resource "helm_release" "qdrant" {
+  provider         = helm.default
+  name             = "qdrant"
+  repository       = "https://qdrant.github.io/qdrant-helm"
+  chart            = "qdrant"
+  version          = "0.10.1"
+  namespace        = "qdrant"
+  create_namespace = true
+  values = [templatefile("${path.module}/helm-values/qdrant.yaml.tpl", {
+    domain_name = local.domain_name
+  })]
+  wait          = false
+  wait_for_jobs = false
+
+  depends_on = [
+    helm_release.ingress_nginx,
+    helm_release.prometheus
+  ]
+}
+
+# JupyterHub
+resource "helm_release" "jupyterhub" {
+  provider         = helm.default
+  name             = "jupyterhub"
+  repository       = "https://hub.jupyter.org/helm-chart"
+  chart            = "jupyterhub"
+  version          = "3.3.7"
+  namespace        = "jupyterhub"
+  create_namespace = true
+  values = [templatefile("${path.module}/helm-values/jupyterhub.yaml.tpl", {
+    domain_name = local.domain_name
+  })]
+  wait          = false
+  wait_for_jobs = false
+
+  depends_on = [
+    helm_release.ingress_nginx,
+  ]
 }

@@ -1,7 +1,7 @@
 locals {
   project_id  = "cloud-ai-compute-prod"
-  prefix_name = "ai-on-gke"
-  domain_name = "cloudacode.com"
+  prefix_name = "vector-db-demo"
+  domain_name = "dev.cloudacode.com"
   location    = "asia-northeast3"
 
   bucket_name = "${local.prefix_name}-${local.location}-bucket"

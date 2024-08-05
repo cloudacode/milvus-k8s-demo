@@ -13,7 +13,7 @@ resource "kubernetes_namespace" "monitoring" {
   depends_on = [module.public-gke-standard-cluster]
 }
 
-module "monitoring-workload-identity" {
+module "workload_identity_monitoring" {
   providers = {
     kubernetes = kubernetes.default
   }
@@ -34,6 +34,28 @@ resource "kubernetes_config_map" "grafana_dashboard" {
   }
   data = {
     "milvus-dashboard.json" = file("${path.module}/grafana/milvus-dashboard.json")
+    "qdrant-dashboard.json" = file("${path.module}/grafana/qdrant-dashboard.json")
   }
   depends_on = [kubernetes_namespace.monitoring]
+}
+
+resource "kubernetes_namespace" "external_dns" {
+  provider = kubernetes.default
+  metadata {
+    name = "external-dns"
+  }
+  depends_on = [module.public-gke-standard-cluster]
+}
+
+module "workload_identity_external_dns" {
+  providers = {
+    kubernetes = kubernetes.default
+  }
+  source     = "terraform-google-modules/kubernetes-engine/google//modules/workload-identity"
+  version    = ">=31.0.0"
+  name       = "external-dns"
+  namespace  = kubernetes_namespace.external_dns.id
+  project_id = local.project_id
+  roles      = ["roles/dns.admin", ]
+  depends_on = [kubernetes_namespace.external_dns]
 }
